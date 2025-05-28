@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Қолмен Жазылған Сөз Танушы — Amjilt Cyber School</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Rubik', sans-serif;
+      background: #141e30;
+      background: linear-gradient(to right, #243b55, #141e30);
+      color: #f4f4f4;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      font-weight: 400;
+      color: #cfd9df;
+      margin-bottom: 2rem;
+    }
+    section {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      animation: fade 0.6s ease-in-out;
+    }
+    section.active {
+      display: flex;
+    }
+    button, select {
+      background: #00c6ff;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1rem;
+      margin-top: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover, select:hover {
+      background: #009ecc;
+    }
+    #canvas {
+      background: white;
+      border: 2px solid #00c6ff;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      margin-top: 1rem;
+      touch-action: none;
+    }
+    #prediction {
+      margin-top: 1.5rem;
+      background: rgba(255,255,255,0.1);
+      padding: 1rem;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      min-height: 2rem;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 1rem;
+    }
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: #cccccc;
+    }
+  </style>
+</head>
+<body>
+
+  <section class="active" id="step-1">
+    <h1>Amjilt Cyber School</h1>
+    <h2>🤲 Жүйе қолмен жазылған сөздерді тануға қабілетті</h2>
+    <p>Сөз жазыңыз, содан соң "Тану" түймесін басыңыз.</p>
+    <button onclick="nextStep()">Бастау</button>
+  </section>
+
+  <section id="step-2">
+    <canvas id="canvas" width="400" height="100"></canvas>
+    <div class="controls">
+      <button onclick="clearCanvas()">Тазарту</button>
+      <button onclick="predictWord()">Тану</button>
+      <select id="language">
+        <option value="eng" selected>Ағылшынша</option>
+        <option value="rus">Орысша</option>
+        <option value="kaz">Қазақша</option>
+        <option value="eng+rus+kaz" >Барлығы</option>
+      </select>
+    </div>
+    <div id="prediction">Нәтиже: ...</div>
+  </section>
+
+  <footer>
+    &copy; 2023 Amjilt Cyber School. Барлық құқықтар қорғалған.
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+  <script>
+    let currentStep = 1;
+    function nextStep() {
+      document.getElementById(`step-${currentStep}`).classList.remove('active');
+      currentStep++;
+      document.getElementById(`step-${currentStep}`).classList.add('active');
+    }
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function clearCanvas() {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      document.getElementById('prediction').innerText = 'Нәтиже: ...';
+    }
+
+    clearCanvas();
+
+    canvas.addEventListener('mousedown', () => drawing = true);
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mousemove', (e) => {
+      if (!drawing) return;
+      drawPoint(e.offsetX, e.offsetY);
+    });
+
+    canvas.addEventListener('touchstart', () => drawing = true);
+    canvas.addEventListener('touchend', () => drawing = false);
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!drawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+      drawPoint(x, y);
+    }, { passive: false });
+
+    function drawPoint(x, y) {
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    async function predictWord() {
+      const imageURL = canvas.toDataURL('image/png');
+      const selectedLang = document.getElementById('language').value;
+      document.getElementById('prediction').innerText = 'Танылып жатыр...';
+
+      const result = await Tesseract.recognize(
+        imageURL,
+        selectedLang,
+        { logger: m => console.log(m) }
+      );
+
+      document.getElementById('prediction').innerText =
+        'Нәтиже: ' + result.data.text.trim();
+    }
+  </script>
+</body>
+</html>
